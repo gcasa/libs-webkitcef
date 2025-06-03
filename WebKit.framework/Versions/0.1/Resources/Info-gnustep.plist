@@ -1,9 +1,0 @@
-{
-  NOTE = "Automatically generated, do not edit!";
-  NSExecutable = "WebKit";
-  NSMainNibFile = "";
-  NSPrincipalClass = "WebKit";
-  Classes = 
-("WebKit")
-  ;
-}
