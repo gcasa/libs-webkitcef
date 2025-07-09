@@ -1,0 +1,29 @@
+#!/bin/bash
+set -e
+
+# Config
+CEF_PLATFORM="linux64"
+CEF_CHANNEL="cef_binary"
+CEF_URL="https://cef-builds.spotifycdn.com"
+
+# Fetch the latest version number
+LATEST=$(curl -s "${CEF_URL}/LATEST.txt")
+
+if [[ -z "$LATEST" ]]; then
+    echo "‚ùå Failed to fetch latest version"
+    exit 1
+fi
+
+# Formulate filename
+FILENAME="${CEF_CHANNEL}_${LATEST}_${CEF_PLATFORM}.tar.bz2"
+FULL_URL="${CEF_URL}/${FILENAME}"
+
+echo "‚¨áÔ∏è  Downloading CEF ${LATEST} for ${CEF_PLATFORM}..."
+curl -LO "$FULL_URL"
+
+echo "üì¶ Extracting $FILENAME..."
+tar -xjf "$FILENAME"
+
+echo "‚úÖ Done! Extracted: ${FILENAME%.tar.bz2}"
+
+exit 0

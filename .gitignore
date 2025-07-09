@@ -1,3 +1,9 @@
 obj
 *.framework
 
+cef_build
+build
+derived_src
+*.app
+*.backup
+obj
