@@ -40,6 +40,11 @@ WebView.h
 # Objective-C Class files
 #
 WebKit_OBJC_FILES = \
+
+#
+# Objective-C++ Class files
+#
+WebKit_OBJCC_FILES = \
 WebView.mm
 
 #
