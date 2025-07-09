@@ -1,3 +1,3 @@
 # libs-webkitcef
 
-Download the latest distribution before running the build_cef.sh script.
+Run the build.sh script to download the latest CEF and then build the framework.
