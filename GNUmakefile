@@ -33,13 +33,15 @@ WebKit_DEPLOY_WITH_CURRENT_VERSION = yes
 # Public headers (will be installed)
 #
 WebKit_HEADER_FILES = \
-WebKit.h 
+WebKit.h \
+WebView.h
 
 #
 # Objective-C Class files
 #
 WebKit_OBJC_FILES = \
-WebKit.m
+WebView.mm
+
 #
 # AutoGSDoc
 #
@@ -60,6 +62,7 @@ WebKit_AGSDOC_FLAGS += -MakeFrames YES
 include $(GNUSTEP_MAKEFILES)/aggregate.make
 include $(GNUSTEP_MAKEFILES)/framework.make
 -include GNUmakefile.postamble
+-include GNUmakefile.generated
 
 
 #Only build documentation if doc=yes was passed on the command line

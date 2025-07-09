@@ -8,3 +8,5 @@ derived_src
 *.backup
 obj
 *~
+derived_src
+*.generated

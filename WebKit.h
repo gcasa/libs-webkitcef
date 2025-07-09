@@ -25,14 +25,7 @@
 #ifndef _WEBKIT_H_
 #define _WEBKIT_H_
 
-#import <Foundation/Foundation.h>
-
-@interface WebKit : NSObject
-{
-
-}
-
-@end
+#import <WebKit/WebView.h>
 
 #endif // _WEBKIT_H_
 
