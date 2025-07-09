@@ -7,3 +7,4 @@ derived_src
 *.app
 *.backup
 obj
+*~
