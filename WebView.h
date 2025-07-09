@@ -2,12 +2,12 @@
 #include <AppKit/AppKit.h>
 #include <signal.h>
 
-#include "include/cef_app.h"
-#include "include/cef_browser.h"
-#include "include/cef_command_line.h"
-#include "include/cef_client.h"
-#include "include/cef_render_handler.h"
-#include "include/cef_message_router.h"
+#include "cef_app.h"
+#include "cef_browser.h"
+#include "cef_command_line.h"
+#include "cef_client.h"
+#include "cef_render_handler.h"
+#include "cef_message_router.h"
 
 // WebView interface
 @interface WebView : NSView
