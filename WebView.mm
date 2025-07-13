@@ -1,6 +1,92 @@
+/* This is under the LGPL */
+
+#include <signal.h>
+
+#include "cef_app.h"
+#include "cef_browser.h"
+#include "cef_command_line.h"
+#include "cef_client.h"
+#include "cef_render_handler.h"
+#include "cef_message_router.h"
+#include "capi/cef_browser_capi.h"
+#include "capi/cef_client_capi.h"
+
 #import "WebView.h"
 
+@interface GSWebView : WebView
+{
+  cef_browser_t* browser;
+  cef_client_t* cef_client;
+}
+
++ (void)initilizeCEFWithArgs:(int)argc argv:(char**)argv;
+
+@end
+
 @implementation WebView
+
++ (id) allocWithZone: (NSZone *)zone
+{
+  if (self == [WebView class])
+  {
+    return [GSWebView allocWithZone: zone];
+  }
+  return [super allocWithZone: zone];
+}
+
+- (void)loadRequest:(NSURLRequest*)request
+{
+}
+
+- (void)loadHTMLString:(NSString*)string baseURL:(NSURL*)baseURL
+{
+}
+
+- (void)reload
+{
+}
+
+- (void)stopLoading
+{
+}
+
+- (void)goBack
+{
+}
+
+- (void)goForward
+{
+}
+
+- (BOOL)canGoBack
+{
+  return NO;
+}
+
+- (BOOL)canGoForward
+{
+  return NO;
+}
+
+- (NSString*)stringByEvaluatingJavaScriptFromString:(NSString*)script
+{
+  return @"";
+}
+
+- (NSURL*)mainFrameURL
+{
+  return nil;
+}
+
+- (NSString*)mainFrameTitle
+{
+  return @"";
+}
+
+@end
+
+@implementation GSWebView
+
 + (void)initialize
 {
   signal(SIGINT, signal_handler);
