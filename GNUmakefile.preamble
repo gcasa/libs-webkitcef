@@ -3,7 +3,9 @@
 #
 
 # Additional flags to pass to the preprocessor
-ADDITIONAL_CPPFLAGS += -std=c++17
+ADDITIONAL_CPPFLAGS += 
+
+ADDITIONAL_OBJCCFLAGS += -std=c++17
 
 # Additional flags to pass to Objective C compiler
 ADDITIONAL_OBJCFLAGS += 

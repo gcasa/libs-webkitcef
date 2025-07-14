@@ -1,6 +1,6 @@
 /* This is under the LGPL */
 
-#include <signal.h>
+#include <iostream>
 
 #include "cef_app.h"
 #include "cef_browser.h"
@@ -8,18 +8,47 @@
 #include "cef_client.h"
 #include "cef_render_handler.h"
 #include "cef_message_router.h"
-#include "capi/cef_browser_capi.h"
-#include "capi/cef_client_capi.h"
+#include "cef_browser_process_handler.h"
+#include "cef_parser.h"
 
 #import "WebView.h"
 
-@interface GSWebView : WebView
+class MinimalClient : public CefClient
 {
-  cef_browser_t* browser;
-  cef_client_t* cef_client;
+ public:
+  IMPLEMENT_REFCOUNTING(MinimalClient);
+};
+
+
+class MyCefApp : public CefApp, public CefBrowserProcessHandler
+{
+ public:
+    CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() override
+    {
+        return this;
+    }
+
+    IMPLEMENT_REFCOUNTING(MyCefApp);
+};
+
+
+void LoadHTML(CefRefPtr<CefFrame> frame, const std::string& html)
+{
+  if (!frame) return;
+
+  CefString encoded = CefURIEncode(CefString(html), false);
+  std::string data_url = "data:text/html;charset=utf-8," + encoded.ToString();
+
+  frame->LoadURL(data_url);
 }
 
-+ (void)initilizeCEFWithArgs:(int)argc argv:(char**)argv;
+@interface GSWebView : WebView
+{
+  CefRefPtr<CefBrowser> browser_;
+  CefRefPtr<MinimalClient> client_;
+}
+
++ (void)initializeCEFWithArgs:(int)argc argv:(char**)argv;
 
 @end
 
@@ -34,11 +63,11 @@
   return [super allocWithZone: zone];
 }
 
-- (void)loadRequest:(NSURLRequest*)request
+- (void)loadRequest: (NSURLRequest*)request
 {
 }
 
-- (void)loadHTMLString:(NSString*)string baseURL:(NSURL*)baseURL
+- (void)loadHTMLString: (NSString*)string baseURL: (NSURL*)baseURL
 {
 }
 
@@ -68,7 +97,7 @@
   return NO;
 }
 
-- (NSString*)stringByEvaluatingJavaScriptFromString:(NSString*)script
+- (NSString*) stringByEvaluatingJavaScriptFromString: (NSString*)script
 {
   return @"";
 }
@@ -87,83 +116,87 @@
 
 @implementation GSWebView
 
-+ (void)initialize
++ (void) initializeCEFWithArgs: (int)argc
+			  argv: (char**)argv
 {
-  signal(SIGINT, signal_handler);
-  signal(SIGTERM, signal_handler);
+  CefMainArgs main_args(argc, argv);
+  CefRefPtr<MyCefApp> app = new MyCefApp();
+
+  int exit_code = CefExecuteProcess(main_args, app, nullptr);
+  if (exit_code >= 0)
+    {
+      exit(exit_code);
+    }
+
+  CefSettings settings;
+  settings.no_sandbox = true;
+  settings.multi_threaded_message_loop = false;  // same as your original
+
+  CefInitialize(main_args, settings, app, nullptr);
 }
 
-+ (void)initializeCEFWithArgs:(int)argc argv:(char**)argv
-{
-  struct _cef_main_args args = {0};
-  args.argc = argc;
-  args.argv = argv;
-
-  cef_app_t* app_handler = create_cef_app();
-
-  int exit_code = cef_execute_process(&args, app_handler, NULL);
-  if (exit_code >= 0) {
-    exit(exit_code);
-  }
-
-  struct _cef_settings_t settings = {0};
-  settings.size = sizeof(settings);
-  settings.multi_threaded_message_loop = 0;
-
-  cef_initialize(&args, &settings, app_handler, NULL);
-}
-
-- (instancetype)initWithFrame:(NSRect)frameRect
+- (instancetype) initWithFrame: (NSRect)frameRect
 {
   self = [super initWithFrame:frameRect];
   if (self)
     {
-      cef_window_info_t window_info = {0};
-      cef_browser_settings_t browser_settings = {0};
+      CefWindowInfo window_info;
+      CefBrowserSettings browser_settings;
 
-      browser_settings.size = sizeof(browser_settings);
-      window_info.windowless_rendering_enabled = 0;
-
+      // Setup parent window
       NSWindow* parent_window = [self window];
-      void* native_handle = (__bridge void*)[parent_window windowHandle]; // pseudo
-      window_info.parent_window = (cef_window_handle_t)native_handle;
-      window_info.bounds.x = frameRect.origin.x;
-      window_info.bounds.y = frameRect.origin.y;
-      window_info.bounds.width = frameRect.size.width;
-      window_info.bounds.height = frameRect.size.height;
+      void* native_handle = (__bridge void*)[parent_window windowHandle];
+      // ensure windowHandle returns NSView*
+      CefWindowHandle cef_handle = reinterpret_cast<CefWindowHandle>(native_handle);
 
-      cef_string_t start_url = {}; cef_string_from_ascii("https://www.gnu.org", &start_url);
+      window_info.SetAsChild(cef_handle,
+			     CefRect(
+				     frameRect.origin.x,
+				     frameRect.origin.y,
+				     frameRect.size.width,
+				     frameRect.size.height
+				     ));
 
-      cef_client = create_minimal_client();
-      browser = cef_browser_host_create_browser_sync(&window_info, cef_client, &start_url, &browser_settings, NULL, NULL);
+      CefString start_url = "https://www.gnu.org";
+
+      client_ = new MinimalClient();
+
+      browser_ = CefBrowserHost::CreateBrowserSync(
+						   window_info,
+						   client_,
+						   start_url,
+						   browser_settings,
+						   nullptr,
+						   nullptr
+						   );
 
       [NSThread detachNewThreadSelector:@selector(runCEFLoop) toTarget:self withObject:nil];
     }
-  return self;
+  return self;  
 }
 
 + (void)runCEFLoop
 {
-  @autoreleasepool {
-    cef_run_loop_thread(nil);
-  }
+  CefRunMessageLoop();
+  // CefDoMessageLoopWork() // use this if we should do this in an NSTimer...
 }
 
 - (void)dealloc
 {
-  stop_signal = 1;
-  cef_shutdown();
+  CefShutdown();
   [super dealloc];
 }
 
 - (void)resizeSubviewsWithOldSize:(NSSize)oldSize
 {
   [super resizeSubviewsWithOldSize:oldSize];
-  if (browser)
-    {
-      cef_browser_host_t* host = browser->get_host(browser);
-      host->was_resized(host);
-    }
+
+  if (!browser_)
+    return;
+
+  CefRefPtr<CefBrowserHost> host = browser_->GetHost();
+  if (host)
+    host->WasResized();
 }
 
 - (void)loadRequest:(NSURLRequest*)request
@@ -174,109 +207,105 @@
 
 - (void)loadHTMLString:(NSString*)string baseURL:(NSURL*)baseURL
 {
-  if (browser)
+  if (!browser_)
+    return;
+
+  std::string html = [string UTF8String];
+  std::string base;
+
+  if (baseURL)
     {
-      const char* utf8_str = [string UTF8String];
-      cef_string_t html = {};
-      cef_string_t base = {};
-
-      cef_string_set(utf8_str, strlen(utf8_str), &html, 1);
-      if (baseURL)
-	{
-	  NSString *baseString = [baseURL absoluteString];
-	  const char* utf8_str_base = [baseString UTF8String];
-	  cef_string_set(utf8_str_base, strlen(utf8_str_base), &base, 1);
-	}
-
-      cef_frame_t* frame = browser->get_main_frame(browser);
-      frame->load_string(frame, &html, &base);
+      base = [[baseURL absoluteString] UTF8String];
     }
+
+  CefRefPtr<CefFrame> frame = browser_->GetMainFrame();
+  if (frame)
+    LoadHTML(frame, html);
 }
 
 - (void)loadURL:(NSString*)url
 {
-  if (browser)
-    {
-      cef_string_t c_url = {};
-      const char* utf8_str = [url UTF8String];
-      cef_string_set(utf8_str, strlen(utf8_str), &c_url, 1);
-      cef_frame_t* frame = browser->get_main_frame(browser);
-      frame->load_url(frame, &c_url);
-    }
+  if (!browser_)
+    return;
+
+  std::string urlStr = [url UTF8String];
+
+  CefRefPtr<CefFrame> frame = browser_->GetMainFrame();
+  if (frame)
+    frame->LoadURL(urlStr);
 }
 
 - (void)reload
 {
-  if (browser)
+  if (browser_)
     {
-      browser->reload(browser);
+      browser_->Reload();
     }
 }
 
 - (void)stopLoading
 {
-  if (browser)
+  if (browser_)
     {
-      browser->stop_load(browser);
+      browser_->StopLoad();
     }
 }
 
 - (void)goBack
 {
-  if (browser)
+  if (browser_)
     {
-      browser->go_back(browser);
+      browser_->GoBack();
     }
 }
 
 - (void)goForward
 {
-  if (browser)
+  if (browser_)
     {
-      browser->go_forward(browser);
+      browser_->GoForward();
     }
 }
 
 - (BOOL)canGoBack
 {
-  return browser ? browser->can_go_back(browser) : NO;
+  return browser_ ? browser_->CanGoBack() : NO;
 }
 
 - (BOOL)canGoForward
 {
-  return browser ? browser->can_go_forward(browser) : NO;
+  return browser_ ? browser_->CanGoForward() : NO;
 }
 
 - (NSString*)stringByEvaluatingJavaScriptFromString:(NSString*)script
 {
-  if (browser)
-    {
-      cef_string_t js = {};
-      const char* utf8_str = [script UTF8String];
-      cef_string_set(utf8_str, strlen(utf8_str), &js, 1);
+  if (!browser_)
+    return @"";
 
-      cef_frame_t* frame = browser->get_main_frame(browser);
-      frame->execute_java_script(frame, &js, NULL, 0);
-      return @""; // async, no return
-    }
-  return @"";
+  std::string jsCode = [script UTF8String];
+  CefRefPtr<CefFrame> frame = browser_->GetMainFrame();
+  if (frame)
+    frame->ExecuteJavaScript(jsCode, frame->GetURL(), 0);
+
+  return @"";  // still async, no result returned  
 }
 
 - (NSURL*)mainFrameURL
 {
-  if (browser)
-    {
-      cef_frame_t* frame = browser->get_main_frame(browser);
-      cef_string_userfree_t url = frame->get_url(frame);
-      NSString* ns_url = (__bridge_transfer NSString*)cef_string_userfree_to_cfstring(url);
-      return [NSURL URLWithString: ns_url];
-    }
-  return nil;
+  if (!browser_)
+    return nil;
+
+  CefRefPtr<CefFrame> frame = browser_->GetMainFrame();
+  if (!frame)
+    return nil;
+
+  std::string url = frame->GetURL();
+  return [NSURL URLWithString:[NSString stringWithUTF8String:url.c_str()]];
 }
 
 - (NSString*)mainFrameTitle
 {
-  if (!browser) return @"";
+  if (!browser_) return @"";
   return @"CEF WebView";
 }
 
