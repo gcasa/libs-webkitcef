@@ -1,6 +1,13 @@
 #!/bin/sh
 
-./bin/download_cef.sh
+if
+    test -e cef_build
+then
+    echo "Build exists"
+else
+    echo "Downloading"
+    ./bin/download_cef.sh
+fi
 
 PROJNAME=`ls -C1 cef_build/cef-project/third_party/cef | grep -v tar`
 PROJDIR="cef_build/cef-project/third_party/cef/${PROJNAME}"
@@ -11,8 +18,9 @@ echo "ADDITIONAL_INCLUDE_DIRS += -I${PROJDIR}/include/wrapper" >> GNUmakefile.ge
 echo "ADDITIONAL_INCLUDE_DIRS += -I${PROJDIR}/include/capi" >> GNUmakefile.generated
 echo "ADDITIONAL_INCLUDE_DIRS += -I${PROJDIR}/include" >> GNUmakefile.generated
 echo "ADDITIONAL_INCLUDE_DIRS += -I${PROJDIR}" >> GNUmakefile.generated
+echo "ADDITIONAL_LDFLAGS += -Wl,--whole-archive ${LIBDIR}/libcef_dll_wrapper.a -Wl,--no-whole-archive" >> GNUmakefile.generated
 echo "ADDITIONAL_LDFLAGS += -L${LIBDIR}" >> GNUmakefile.generated
-echo "ADDITIONAL_GUI_LIBS += -lcef_dll_wrapper" >> GNUmakefile.generated
+# echo "ADDITIONAL_GUI_LIBS += -lcef_dll_wrapper" >> GNUmakefile.generated
 echo "\n# Done" >> GNUmakefile.generated
 
 make debug=yes

@@ -16,4 +16,11 @@
 	);
 	Super = NSObject;
     };
+    WebView = {
+	Actions = (
+	);
+	Outlets = (
+	);
+	Super = NSView;
+    };
 }
