@@ -166,37 +166,6 @@ void LoadHTML(CefRefPtr<CefFrame> frame, const std::string& html)
   self = [super initWithFrame:frameRect];
   if (self)
     {
-      CefWindowInfo window_info;
-      CefBrowserSettings browser_settings;
-
-      // Setup parent window
-      NSWindow* parent_window = [self window];
-      void* native_handle = (__bridge void*)[parent_window windowHandle];
-      // ensure windowHandle returns NSView*
-      CefWindowHandle cef_handle = reinterpret_cast<CefWindowHandle>(native_handle);
-
-      window_info.SetAsChild(cef_handle,
-			     CefRect(
-				     frameRect.origin.x,
-				     frameRect.origin.y,
-				     frameRect.size.width,
-				     frameRect.size.height
-				     ));
-
-      CefString start_url = "https://www.gnu.org";
-
-      client_ = new MinimalClient();
-
-      browser_ = CefBrowserHost::CreateBrowserSync(
-						   window_info,
-						   client_,
-						   start_url,
-						   browser_settings,
-						   nullptr,
-						   nullptr
-						   );
-
-      [NSThread detachNewThreadSelector:@selector(runCEFLoop) toTarget:self withObject:nil];
     }
   return self;  
 }
@@ -204,7 +173,51 @@ void LoadHTML(CefRefPtr<CefFrame> frame, const std::string& html)
 + (void)runCEFLoop
 {
   CefRunMessageLoop();
-  // CefDoMessageLoopWork() // use this if we should do this in an NSTimer...
+}
+
+- (void) awakeFromNib
+{
+  NSRect frameRect = [self frame];
+  CefWindowInfo window_info;
+  CefBrowserSettings browser_settings;
+  
+  // Setup parent window
+  NSWindow* parent_window = [self window];
+  
+  NSLog(@"parent_window = %@", parent_window);
+  void* native_handle = (__bridge void*)[parent_window windowHandle];
+  // ensure windowHandle returns NSView*
+  
+  NSLog(@"native_handle = %ld", native_handle);
+  CefWindowHandle cef_handle = reinterpret_cast<CefWindowHandle>(native_handle);
+  
+  NSLog(@"cef_handle = %ld", cef_handle);
+  window_info.SetAsChild(cef_handle,
+			 CefRect(
+				 frameRect.origin.x,
+				 frameRect.origin.y,
+				 frameRect.size.width,
+				 frameRect.size.height
+				 ));
+  
+  CefString start_url = "https://www.gnu.org";
+  
+  client_ = new MinimalClient();
+  NSLog(@"client_ = %ld", &client_);
+  
+  browser_ = CefBrowserHost::CreateBrowserSync(
+					       window_info,
+					       client_,
+					       start_url,
+					       browser_settings,
+					       nullptr,
+					       nullptr
+					       );
+  
+  [NSThread detachNewThreadSelector: @selector(runCEFLoop)
+			   toTarget: self
+			 withObject: nil];
+  
 }
 
 - (void)dealloc

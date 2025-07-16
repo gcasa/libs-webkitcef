@@ -21,5 +21,5 @@ ADDITIONAL_INCLUDE_DIRS += -I../../WebKit
 ADDITIONAL_LIB_DIRS += -L../../WebKit/WebKit.framework
 
 # Additional GUI libraries to link
-ADDITIONAL_GUI_LIBS += -lWebKit
+ADDITIONAL_GUI_LIBS += -lWebKit -lcef -lEGL -lGLESv2 -lvk_swiftshader
 
