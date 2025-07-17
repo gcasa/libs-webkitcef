@@ -1,6 +1,5 @@
 obj
 *.framework
-
 cef_build
 build
 derived_src
@@ -10,4 +9,3 @@ obj
 *~
 derived_src
 *.generated
-derived_src
